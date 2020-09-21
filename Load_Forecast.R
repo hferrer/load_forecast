@@ -49,6 +49,39 @@ load.data.dt.dcast[,Date.TS := parse_date_time(paste(Date,HE,sep = " "), order =
 
 
 #Graph Load
-Load <- load.data.dt.dcast[,Load]
+par(mfrow=c(4,3))
 
-plot.ts(Load)
+for (i in 1:12){
+  
+  data <- load.data.dt.dcast[Month == i, ]
+  
+  y <- data[,Load]
+  plot(y, ylim = c(0,10000))
+  print(adf.test((y)))
+}
+
+par(mfrow=c(1,1))
+x <- ts(load.data.dt.dcast[ , Load], frequency = 24*365)
+plot.ts(x)
+x_decomp <- decompose(x)
+plot(x_decomp)
+
+x_trend <- x_decomp$trend %>% as.data.table
+x_trend.test <- x_trend[!is.na(x),]
+  acf(x_trend.test)
+  pacf(x_trend.test)
+  adf.test(ts(x_trend.test, frequency = 24))
+  
+x_seasonal <- x_decomp$seasonal %>% as.data.table
+x_seasonal.test <- x_seasonal[!is.na(x),]
+  acf(x_seasonal.test)
+  pacf(x_seasonal.test)  
+  adf.test(x_decomp$seasonal)
+
+  
+x_random <- x_decomp$random %>% as.data.table
+x_random.test <- x_random[!is.na(x),]
+  acf(x_random.test)
+  pacf(x_random.test)
+
+auto.arima(x_random.test)    
