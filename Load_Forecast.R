@@ -47,6 +47,9 @@ load.data.dt.dcast[ , ":=" (Month = month(Date),
                             DATE.DMO = paste(year(Date),month(Date),1,sep="-"))]
 load.data.dt.dcast[,Date.TS := parse_date_time(paste(Date,HE,sep = " "), order = "ymd H")]
 
+#Create date-time data frame
+date.time.dt<- expand.grid(seq.Date(min(load.data.dt.dcast[,Date]),max(load.data.dt.dcast[,Date]), by="day"),rep(1:24))
+date.time.dt %>% setnames(.,names(date.time.dt), c("Date","HE")) %>% setorderv(.,col=c("Date","HE"), order = 1)
 
 #Graph Load
 par(mfrow=c(4,3))
@@ -63,25 +66,31 @@ for (i in 1:12){
 par(mfrow=c(1,1))
 x <- ts(load.data.dt.dcast[ , Load], frequency = 24*365)
 plot.ts(x)
+
+#Decompsose load and graph the parts
 x_decomp <- decompose(x)
 plot(x_decomp)
 
+#Examine each of the decomposed part of the load
+#Trend
 x_trend <- x_decomp$trend %>% as.data.table
 x_trend.test <- x_trend[!is.na(x),]
   acf(x_trend.test)
   pacf(x_trend.test)
   adf.test(ts(x_trend.test, frequency = 24))
-  
+#Seasonal  
 x_seasonal <- x_decomp$seasonal %>% as.data.table
 x_seasonal.test <- x_seasonal[!is.na(x),]
   acf(x_seasonal.test)
   pacf(x_seasonal.test)  
   adf.test(x_decomp$seasonal)
-
-  
+#Random
 x_random <- x_decomp$random %>% as.data.table
 x_random.test <- x_random[!is.na(x),]
   acf(x_random.test)
   pacf(x_random.test)
 
+#Check the residuals to see if they have a structure
 auto.arima(x_random.test)    
+
+
